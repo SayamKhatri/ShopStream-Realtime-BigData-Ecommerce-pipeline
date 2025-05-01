@@ -1,0 +1,58 @@
+-- Step 1: Use appropriate role
+USE ROLE ACCOUNTADMIN;
+
+-- Step 2: Drop and create fresh database
+DROP DATABASE IF EXISTS s3_to_snowflake;
+CREATE DATABASE IF NOT EXISTS s3_to_snowflake;
+USE s3_to_snowflake;
+
+-- Step 3: Create a storage integration for S3
+CREATE OR REPLACE STORAGE INTEGRATION s3_int
+  TYPE = EXTERNAL_STAGE
+  STORAGE_PROVIDER = S3
+  ENABLED = TRUE
+  STORAGE_AWS_ROLE_ARN = '{}'
+  STORAGE_ALLOWED_LOCATIONS = ('s3://{}')
+  COMMENT = 'Snowflake integration with Kinesis-Firehose-backed S3 bucket';
+
+-- Optional: Confirm integration is working
+DESC INTEGRATION s3_int;
+
+-- Step 4: Create external stage pointing to your S3 bucket
+CREATE OR REPLACE STAGE mystage
+  URL = 's3://{}'
+  STORAGE_INTEGRATION = s3_int;
+
+
+-- Confirm access
+LIST @mystage;
+
+-- Step 5: Create file format for newline-delimited JSON
+CREATE OR REPLACE FILE FORMAT my_json_format
+  TYPE = JSON
+  STRIP_OUTER_ARRAY = FALSE
+  IGNORE_UTF8_ERRORS = TRUE;
+
+
+
+CREATE OR REPLACE EXTERNAL TABLE ecommerce_raw
+WITH LOCATION = @mystage
+FILE_FORMAT = my_json_format
+AUTO_REFRESH = TRUE;
+
+
+SELECT * FROM ecommerce_raw LIMIT 10;
+
+
+SELECT 
+  parse_json(VALUE):invoice::STRING AS invoice,
+  parse_json(VALUE):timestamp::TIMESTAMP AS event_time,
+  parse_json(VALUE):price::FLOAT AS price,
+  parse_json(VALUE):year::INT AS year,
+  parse_json(VALUE):month::INT AS month
+FROM ecommerce_raw
+where parse_json(VALUE):month = 1;
+
+
+SELECT count(*) FROM ecommerce_raw;
+
