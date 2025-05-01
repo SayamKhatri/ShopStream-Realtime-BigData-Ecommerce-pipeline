@@ -37,7 +37,7 @@ The pipeline's architecture comprises the following AWS services:
 ## Monitoring & Logging
 
 - **AWS CloudWatch**: Monitors Lambda functions, Kinesis streams, and API Gateway for performance metrics and logs.
-- **Snowflake Monitoring**: Utilize Snowflake's Query History and Performance dashboards to monitor query performance and warehouse utilization.
+- **Snowflake Monitoring**: Utilized Snowflake's Query History and Performance dashboards to monitor query performance and warehouse utilization.
 
 
 ## Security & Compliance
